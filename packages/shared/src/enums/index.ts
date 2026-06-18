@@ -1,0 +1,82 @@
+export enum QueueName {
+  TOPUP = 'topup',
+  WITHDRAWAL = 'withdrawal',
+  ESCROW = 'escrow',
+  WEBHOOK = 'webhook',
+  NOTIFICATION = 'notification',
+}
+
+export enum JobName {
+  PROCESS_TOPUP = 'process_topup',
+  PROCESS_WITHDRAWAL = 'process_withdrawal',
+  FUND_ESCROW = 'fund_escrow',
+  RELEASE_ESCROW = 'release_escrow',
+  REFUND_ESCROW = 'refund_escrow',
+  DELIVER_WEBHOOK = 'deliver_webhook',
+  RETRY_WEBHOOK = 'retry_webhook',
+}
+
+export enum UserRole {
+  ADMIN = 'ADMIN',
+  CLIENT = 'CLIENT',
+  FREELANCER = 'FREELANCER',
+  MARKETPLACE = 'MARKETPLACE',
+}
+
+export enum UserStatus {
+  ACTIVE = 'ACTIVE',
+  SUSPENDED = 'SUSPENDED',
+  PENDING_VERIFICATION = 'PENDING_VERIFICATION',
+}
+
+export enum EscrowStatus {
+  PENDING = 'PENDING',
+  FUNDED = 'FUNDED',
+  ACTIVE = 'ACTIVE',
+  DISPUTED = 'DISPUTED',
+  RELEASED = 'RELEASED',
+  REFUNDED = 'REFUNDED',
+  CANCELLED = 'CANCELLED',
+}
+
+export enum DisputeStatus {
+  OPEN = 'OPEN',
+  UNDER_REVIEW = 'UNDER_REVIEW',
+  RESOLVED_CLIENT = 'RESOLVED_CLIENT',
+  RESOLVED_FREELANCER = 'RESOLVED_FREELANCER',
+  CLOSED = 'CLOSED',
+}
+
+export enum TransactionType {
+  TOPUP = 'TOPUP',
+  ESCROW_LOCK = 'ESCROW_LOCK',
+  ESCROW_RELEASE = 'ESCROW_RELEASE',
+  ESCROW_REFUND = 'ESCROW_REFUND',
+  WITHDRAWAL = 'WITHDRAWAL',
+  FEE = 'FEE',
+}
+
+export enum TransactionStatus {
+  PENDING = 'PENDING',
+  COMPLETED = 'COMPLETED',
+  FAILED = 'FAILED',
+}
+
+export enum WebhookEvent {
+  TOPUP_COMPLETED = 'TOPUP_COMPLETED',
+  TOPUP_FAILED = 'TOPUP_FAILED',
+  PAYMENT_COMPLETED = 'PAYMENT_COMPLETED',
+  ESCROW_FUNDED = 'ESCROW_FUNDED',
+  ESCROW_RELEASED = 'ESCROW_RELEASED',
+  ESCROW_REFUNDED = 'ESCROW_REFUNDED',
+  WITHDRAWAL_COMPLETED = 'WITHDRAWAL_COMPLETED',
+  WITHDRAWAL_FAILED = 'WITHDRAWAL_FAILED',
+  DISPUTE_OPENED = 'DISPUTE_OPENED',
+  DISPUTE_RESOLVED = 'DISPUTE_RESOLVED',
+}
+
+export enum WebhookDeliveryStatus {
+  PENDING = 'PENDING',
+  DELIVERED = 'DELIVERED',
+  FAILED = 'FAILED',
+}

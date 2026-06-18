@@ -1,0 +1,227 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  CLIENT
+  FREELANCER
+  MARKETPLACE
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  PENDING_VERIFICATION
+}
+
+enum EscrowStatus {
+  PENDING
+  FUNDED
+  ACTIVE
+  DISPUTED
+  RELEASED
+  REFUNDED
+  CANCELLED
+}
+
+enum DisputeStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED_CLIENT
+  RESOLVED_FREELANCER
+  CLOSED
+}
+
+enum TransactionType {
+  TOPUP
+  ESCROW_LOCK
+  ESCROW_RELEASE
+  ESCROW_REFUND
+  WITHDRAWAL
+  FEE
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum WebhookDeliveryStatus {
+  PENDING
+  DELIVERED
+  FAILED
+}
+
+model User {
+  id               String     @id @default(uuid())
+  email            String     @unique
+  passwordHash     String
+  role             UserRole   @default(CLIENT)
+  status           UserStatus @default(ACTIVE)
+  airtmAccountId   String?
+  stellarPublicKey String?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  balance           Balance?
+  transactions      Transaction[]
+  clientEscrows     Escrow[]         @relation("ClientEscrows")
+  freelancerEscrows Escrow[]         @relation("FreelancerEscrows")
+  raisedDisputes    Dispute[]        @relation("RaisedDisputes")
+  webhookEndpoints  WebhookEndpoint[]
+  auditLogs         AuditLog[]
+  refreshTokens     RefreshToken[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  isRevoked Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+model Balance {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  availableAmount Decimal  @default(0) @db.Decimal(18, 8)
+  reservedAmount  Decimal  @default(0) @db.Decimal(18, 8)
+  currency        String   @default("USD")
+  version         Int      @default(0)
+  updatedAt       DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("balances")
+}
+
+model Transaction {
+  id             String            @id @default(uuid())
+  idempotencyKey String            @unique
+  userId         String
+  type           TransactionType
+  status         TransactionStatus @default(PENDING)
+  amount         Decimal           @db.Decimal(18, 8)
+  fee            Decimal           @default(0) @db.Decimal(18, 8)
+  escrowId       String?
+  reference      String?
+  metadata       Json?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  user   User    @relation(fields: [userId], references: [id])
+  escrow Escrow? @relation(fields: [escrowId], references: [id])
+
+  @@index([userId, type, status])
+  @@index([escrowId])
+  @@map("transactions")
+}
+
+model Escrow {
+  id                String       @id @default(uuid())
+  clientId          String
+  freelancerId      String
+  amount            Decimal      @db.Decimal(18, 8)
+  fee               Decimal      @default(0) @db.Decimal(18, 8)
+  status            EscrowStatus @default(PENDING)
+  stellarContractId String?
+  stellarTxHash     String?
+  description       String?
+  milestoneId       String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  client       User          @relation("ClientEscrows", fields: [clientId], references: [id])
+  freelancer   User          @relation("FreelancerEscrows", fields: [freelancerId], references: [id])
+  dispute      Dispute?
+  transactions Transaction[]
+
+  @@index([clientId, status])
+  @@index([freelancerId, status])
+  @@map("escrows")
+}
+
+model Dispute {
+  id           String        @id @default(uuid())
+  escrowId     String        @unique
+  raisedById   String
+  reason       String
+  status       DisputeStatus @default(OPEN)
+  evidence     Json?
+  resolution   String?
+  resolvedById String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  escrow   Escrow @relation(fields: [escrowId], references: [id])
+  raisedBy User   @relation("RaisedDisputes", fields: [raisedById], references: [id])
+
+  @@map("disputes")
+}
+
+model WebhookEndpoint {
+  id        String   @id @default(uuid())
+  userId    String
+  url       String
+  secret    String
+  events    String[]
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user       User              @relation(fields: [userId], references: [id])
+  deliveries WebhookDelivery[]
+
+  @@index([userId, isActive])
+  @@map("webhook_endpoints")
+}
+
+model WebhookDelivery {
+  id             String               @id @default(uuid())
+  endpointId     String
+  event          String
+  payload        Json
+  status         WebhookDeliveryStatus @default(PENDING)
+  attempts       Int                  @default(0)
+  nextRetryAt    DateTime?
+  responseStatus Int?
+  responseBody   String?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  endpoint WebhookEndpoint @relation(fields: [endpointId], references: [id])
+
+  @@index([endpointId, status])
+  @@map("webhook_deliveries")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  action    String
+  entity    String
+  entityId  String
+  oldValues Json?
+  newValues Json?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([userId, entity, entityId])
+  @@map("audit_logs")
+}
